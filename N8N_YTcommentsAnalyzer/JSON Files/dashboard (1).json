@@ -1,0 +1,814 @@
+{
+  "name": "dashboard",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "analyze",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        96,
+        16
+      ],
+      "id": "d9b06bc8-e978-4d70-ac17-13a36bae25b5",
+      "name": "Webhook",
+      "webhookId": "4d5fe9c5-7108-4891-8dd1-f4eb9dfdbec3"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7180f357-3b91-4aa6-a4f9-61185ae728c2",
+              "name": "videoId",
+              "value": "={{ $json.query?.videoId ?? $json.videoId ?? \"\" }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        320,
+        16
+      ],
+      "id": "5982d86f-bce2-48d9-b256-b792b592ca1b",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "feb65ee4-137b-4909-bd5a-faa0d8686ed1",
+              "leftValue": "={{ $json.videoId }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        624,
+        0
+      ],
+      "id": "1a835ef7-e083-4203-add8-45e4e2395fbc",
+      "name": "If video id empty"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "50Aj0lNdYn1uwFHT",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/50Aj0lNdYn1uwFHT",
+          "cachedResultName": "Fetch&StoreYT"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        1568,
+        272
+      ],
+      "id": "b11e8e7b-4bcb-4579-b0ea-74e8ebf34cc8",
+      "name": "Call 'Fetch&StoreYT'",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "show columns from analysis\n\n ",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        464,
+        336
+      ],
+      "id": "33fbe4c7-ad68-4b13-b15b-bcee9a4002dc",
+      "name": "Execute a SQL query1",
+      "credentials": {
+        "mySql": {
+          "id": "wwGtWWSfKeg2Ev2w",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "wWARIsg1nZng1mcM",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/wWARIsg1nZng1mcM",
+          "cachedResultName": "AnalyzeYT"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        1984,
+        -16
+      ],
+      "id": "2ab85af5-864a-4ce6-aea7-7e96770a7a85",
+      "name": "Call 'AnalyzeYT'",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select count(*) from comments\nWHERE videoId = '{{ $('If video id empty').item.json.videoId }}'\nand processed = 1",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        1264,
+        -64
+      ],
+      "id": "bee3f2af-7dde-4ad8-9e20-fb484c701d69",
+      "name": "count ivideoId n analysis table",
+      "credentials": {
+        "mySql": {
+          "id": "wwGtWWSfKeg2Ev2w",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "474313cb-6e60-4749-8a2e-59d5d9d04d14",
+              "leftValue": "={{ $json[\"count(*)\"] }}",
+              "rightValue": 2,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1504,
+        -64
+      ],
+      "id": "ffbcebf1-2f87-4581-8198-ea42c92fd656",
+      "name": "if analysis exist"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "4ec701d1-2202-4d56-84ea-7d0d9013553b",
+              "leftValue": "={{ $json.count }}",
+              "rightValue": 5,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1040,
+        96
+      ],
+      "id": "596b8a7b-4e55-444f-8e95-d60eea92f057",
+      "name": "If comment id exists"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT COUNT(*) as count\nFROM comments\nWHERE videoId = '{{ $json.videoId }}'\nand processed = 0\nlimit 50;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        832,
+        96
+      ],
+      "id": "42f57911-f982-436d-a659-da347dd67973",
+      "name": "count id in comments",
+      "credentials": {
+        "mySql": {
+          "id": "wwGtWWSfKeg2Ev2w",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d924d922-6e8e-42f2-9f1c-8cfa620169e5",
+              "name": "videoId",
+              "value": "={{ $('Edit Fields').item.json.videoId }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1344,
+        272
+      ],
+      "id": "9a558acd-d470-43a2-9739-784824a40f8a",
+      "name": "set videoid"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d924d922-6e8e-42f2-9f1c-8cfa620169e5",
+              "name": "videoId",
+              "value": "={{ $('Edit Fields').item.json.videoId }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1776,
+        -16
+      ],
+      "id": "81de4a55-4480-4198-9b14-bb6deb063dc6",
+      "name": "set video id"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "wWARIsg1nZng1mcM",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/wWARIsg1nZng1mcM",
+          "cachedResultName": "AnalyzeYT"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        1856,
+        272
+      ],
+      "id": "7a85e762-8851-4071-8146-6573b5682a2c",
+      "name": "Call 'AnalyzeYT'1",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "b6Byp9BT1i5yG9FK",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/b6Byp9BT1i5yG9FK",
+          "cachedResultName": "FinalAggregationYT"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        2336,
+        272
+      ],
+      "id": "3fdb77cb-3990-40f3-8de7-07a829a8296c",
+      "name": "Call 'FinalAggregationYT'",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "b6Byp9BT1i5yG9FK",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/b6Byp9BT1i5yG9FK",
+          "cachedResultName": "FinalAggregationYT"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        2416,
+        -16
+      ],
+      "id": "baa31cd4-f894-40d2-b130-6cdf4ad00d29",
+      "name": "Call 'FinalAggregationYT'1",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "b6Byp9BT1i5yG9FK",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/b6Byp9BT1i5yG9FK",
+          "cachedResultName": "FinalAggregationYT"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        2080,
+        -304
+      ],
+      "id": "c7a7e326-7fb9-4691-8533-95326bc52ac9",
+      "name": "Call 'FinalAggregationYT'2",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d924d922-6e8e-42f2-9f1c-8cfa620169e5",
+              "name": "videoId",
+              "value": "={{ $('Edit Fields').item.json.videoId }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1904,
+        -304
+      ],
+      "id": "25c28ee2-a392-4d85-83b3-cb7139b7fa75",
+      "name": "set video id1"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "=<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n<title>Comments Insights</title>\n<link href=\"https://fonts.googleapis.com/css2?family=Syne:wght@400;600;800&family=DM+Sans:wght@300;400;500&display=swap\" rel=\"stylesheet\">\n<script src=\"https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js\"></script>\n<style>\n  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }\n\n  :root {\n    --bg: #f0f2f8;\n    --surface: #ffffff;\n    --surface2: #f5f6fa;\n    --border: #e2e4ed;\n    --red: #e8284a;\n    --red-dim: rgba(232,40,74,0.1);\n    --green: #1a9e4a;\n    --yellow: #d4a000;\n    --blue: #0062cc;\n    --text: #1a1a2e;\n    --muted: #6b7280;\n  }\n\n  body {\n    background: var(--bg);\n    color: var(--text);\n    font-family: 'DM Sans', sans-serif;\n    min-height: 100vh;\n    padding: 40px 20px;\n  }\n\n  .header {\n    text-align: center;\n    margin-bottom: 48px;\n    animation: fadeDown 0.6s ease;\n  }\n\n  .header h1 {\n    font-family: 'Syne', sans-serif;\n    font-size: clamp(2rem, 5vw, 3.5rem);\n    font-weight: 800;\n    background: linear-gradient(135deg, #e8284a, #ff6b35);\n    -webkit-background-clip: text;\n    -webkit-text-fill-color: transparent;\n    letter-spacing: -1px;\n  }\n\n  .header p {\n    color: var(--muted);\n    margin-top: 8px;\n    font-size: 14px;\n    letter-spacing: 2px;\n    text-transform: uppercase;\n  }\n\n  .grid {\n    max-width: 1100px;\n    margin: 0 auto;\n    display: grid;\n    grid-template-columns: repeat(12, 1fr);\n    gap: 16px;\n  }\n\n  .card {\n    background: var(--surface);\n    border: 1px solid var(--border);\n    border-radius: 16px;\n    padding: 24px;\n    animation: fadeUp 0.5s ease both;\n    box-shadow: 0 2px 12px rgba(0,0,0,0.06);\n  }\n\n  .card:nth-child(1) { animation-delay: 0.1s; }\n  .card:nth-child(2) { animation-delay: 0.2s; }\n  .card:nth-child(3) { animation-delay: 0.3s; }\n  .card:nth-child(4) { animation-delay: 0.4s; }\n  .card:nth-child(5) { animation-delay: 0.5s; }\n  .card:nth-child(6) { animation-delay: 0.6s; }\n\n  .col-4  { grid-column: span 4; }\n  .col-5  { grid-column: span 5; }\n  .col-6  { grid-column: span 6; }\n  .col-7  { grid-column: span 7; }\n  .col-12 { grid-column: span 12; }\n\n  @media (max-width: 768px) {\n    .col-4, .col-5, .col-6, .col-7 { grid-column: span 12; }\n  }\n\n  .card-title {\n    font-family: 'Syne', sans-serif;\n    font-size: 11px;\n    font-weight: 600;\n    letter-spacing: 2px;\n    text-transform: uppercase;\n    color: var(--muted);\n    margin-bottom: 20px;\n    display: flex;\n    align-items: center;\n    gap: 8px;\n  }\n\n  .card-title::before {\n    content: '';\n    display: block;\n    width: 6px;\n    height: 6px;\n    border-radius: 50%;\n    background: var(--red);\n  }\n\n  .chart-wrap {\n    position: relative;\n    height: 220px;\n  }\n\n  .sentiment-pills {\n    display: flex;\n    flex-direction: column;\n    gap: 12px;\n    margin-top: 8px;\n  }\n\n  .pill-row {\n    display: flex;\n    align-items: center;\n    gap: 12px;\n  }\n\n  .pill-label {\n    font-size: 12px;\n    font-weight: 500;\n    width: 70px;\n    text-transform: capitalize;\n    color: var(--text);\n  }\n\n  .pill-bar-wrap {\n    flex: 1;\n    height: 8px;\n    background: var(--surface2);\n    border-radius: 99px;\n    overflow: hidden;\n  }\n\n  .pill-bar {\n    height: 100%;\n    border-radius: 99px;\n    transition: width 1s ease;\n  }\n\n  .pill-count {\n    font-size: 13px;\n    font-weight: 600;\n    width: 30px;\n    text-align: right;\n    color: var(--muted);\n  }\n\n  .tags {\n    display: flex;\n    flex-wrap: wrap;\n    gap: 8px;\n    margin-top: 8px;\n  }\n\n  .tag {\n    background: var(--surface2);\n    border: 1px solid var(--border);\n    border-radius: 99px;\n    padding: 5px 14px;\n    font-size: 12px;\n    font-weight: 500;\n    color: var(--text);\n    display: flex;\n    align-items: center;\n    gap: 6px;\n  }\n\n  .tag span {\n    background: var(--red);\n    color: white;\n    font-size: 10px;\n    font-weight: 700;\n    border-radius: 99px;\n    padding: 1px 6px;\n  }\n\n  .comment-list {\n    display: flex;\n    flex-direction: column;\n    gap: 12px;\n    max-height: 320px;\n    overflow-y: auto;\n    padding-right: 4px;\n  }\n\n  .comment-list::-webkit-scrollbar { width: 4px; }\n  .comment-list::-webkit-scrollbar-track { background: var(--surface2); border-radius: 99px; }\n  .comment-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }\n\n  .comment-item {\n    background: var(--surface2);\n    border-left: 3px solid var(--red);\n    border-radius: 0 10px 10px 0;\n    padding: 12px 16px;\n    font-size: 13px;\n    line-height: 1.6;\n    color: var(--text);\n  }\n\n  @keyframes fadeDown {\n    from { opacity: 0; transform: translateY(-20px); }\n    to   { opacity: 1; transform: translateY(0); }\n  }\n\n  @keyframes fadeUp {\n    from { opacity: 0; transform: translateY(24px); }\n    to   { opacity: 1; transform: translateY(0); }\n  }\n</style>\n</head>\n<body>\n\n<div class=\"header\">\n  <h1>Comments Insights</h1>\n  <p>YouTube Analytics Dashboard</p>\n</div>\n\n<div class=\"grid\">\n\n  <div class=\"card col-4\">\n    <div class=\"card-title\">Sentiment Overview</div>\n    <div class=\"chart-wrap\">\n      <canvas id=\"sentimentChart\"></canvas>\n    </div>\n  </div>\n\n  <div class=\"card col-4\">\n    <div class=\"card-title\">Sentiment Breakdown</div>\n    <div class=\"sentiment-pills\" id=\"sentimentBars\"></div>\n  </div>\n\n  <div class=\"card col-4\">\n    <div class=\"card-title\">Top Keywords</div>\n    <div class=\"tags\" id=\"keywordTags\"></div>\n  </div>\n\n  <div class=\"card col-6\">\n    <div class=\"card-title\">Top Complaints</div>\n    <div class=\"chart-wrap\">\n      <canvas id=\"complaintsChart\"></canvas>\n    </div>\n  </div>\n\n  <div class=\"card col-6\">\n    <div class=\"card-title\">Top Requests</div>\n    <div class=\"chart-wrap\">\n      <canvas id=\"requestsChart\"></canvas>\n    </div>\n  </div>\n\n  <div class=\"card col-12\">\n    <div class=\"card-title\">Most Engaged Comments</div>\n    <div class=\"comment-list\" id=\"commentList\"></div>\n  </div>\n\n</div>\n\n<script>\n  const data = {{ JSON.stringify($json) }};\n\n  const C = {\n    positive: '#1a9e4a',\n    negative: '#e8284a',\n    neutral:  '#d4a000',\n    red:      '#e8284a',\n    blue:     '#0062cc',\n    border:   '#e2e4ed',\n    muted:    '#6b7280',\n    text:     '#1a1a2e',\n  };\n\n  Chart.defaults.color = '#6b7280';\n  Chart.defaults.font.family = \"'DM Sans', sans-serif\";\n\n  // Sentiment Donut\n  const sentColors = data.sentiment.map(s =>\n    s.sentiment_label === 'positive' ? C.positive :\n    s.sentiment_label === 'negative' ? C.negative : C.neutral\n  );\n\n  new Chart(document.getElementById('sentimentChart'), {\n    type: 'doughnut',\n    data: {\n      labels: data.sentiment.map(s => s.sentiment_label),\n      datasets: [{\n        data: data.sentiment.map(s => s.count),\n        backgroundColor: sentColors,\n        borderColor: '#ffffff',\n        borderWidth: 3,\n        hoverOffset: 6,\n      }]\n    },\n    options: {\n      cutout: '72%',\n      plugins: {\n        legend: {\n          position: 'bottom',\n          labels: { padding: 16, boxWidth: 10, borderRadius: 3 }\n        }\n      }\n    }\n  });\n\n  // Sentiment Bars\n  const total = data.sentiment.reduce((a, s) => a + s.count, 0);\n  const barsEl = document.getElementById('sentimentBars');\n  data.sentiment.forEach(s => {\n    const pct = Math.round((s.count / total) * 100);\n    const color = s.sentiment_label === 'positive' ? C.positive :\n                  s.sentiment_label === 'negative' ? C.negative : C.neutral;\n    barsEl.innerHTML += `\n      <div class=\"pill-row\">\n        <span class=\"pill-label\">${s.sentiment_label}</span>\n        <div class=\"pill-bar-wrap\">\n          <div class=\"pill-bar\" style=\"width:${pct}%;background:${color}\"></div>\n        </div>\n        <span class=\"pill-count\">${s.count}</span>\n      </div>`;\n  });\n\n  // Keywords\n  const tagsEl = document.getElementById('keywordTags');\n  data.keywords.forEach(k => {\n    tagsEl.innerHTML += `<div class=\"tag\">${k.keyword}<span>${k.count}</span></div>`;\n  });\n\n  // Complaints Chart\n  new Chart(document.getElementById('complaintsChart'), {\n    type: 'bar',\n    data: {\n      labels: data.topComplaints.map(c => c.issue),\n      datasets: [{\n        label: 'Count',\n        data: data.topComplaints.map(c => c.count),\n        backgroundColor: 'rgba(232,40,74,0.12)',\n        borderColor: C.red,\n        borderWidth: 2,\n        borderRadius: 6,\n      }]\n    },\n    options: {\n      indexAxis: 'y',\n      plugins: { legend: { display: false } },\n      scales: {\n        x: { grid: { color: '#e2e4ed' }, ticks: { stepSize: 1 } },\n        y: { grid: { display: false } }\n      }\n    }\n  });\n\n  // Requests Chart\n  new Chart(document.getElementById('requestsChart'), {\n    type: 'bar',\n    data: {\n      labels: data.topRequests.map(r => r.request),\n      datasets: [{\n        label: 'Count',\n        data: data.topRequests.map(r => r.count),\n        backgroundColor: 'rgba(0,98,204,0.12)',\n        borderColor: C.blue,\n        borderWidth: 2,\n        borderRadius: 6,\n      }]\n    },\n    options: {\n      indexAxis: 'y',\n      plugins: { legend: { display: false } },\n      scales: {\n        x: { grid: { color: '#e2e4ed' }, ticks: { stepSize: 1 } },\n        y: { grid: { display: false } }\n      }\n    }\n  });\n\n  // Comments\n  const listEl = document.getElementById('commentList');\n  data.mostEngaged.forEach(c => {\n    listEl.innerHTML += `<div class=\"comment-item\">${c.text}</div>`;\n  });\n</script>\n</body>\n</html>",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "content-Type",
+                "value": "text/html"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        2288,
+        -304
+      ],
+      "id": "0948b284-1589-4f49-bc0d-c321cad43027",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "=<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n<title>Comments Insights</title>\n<link href=\"https://fonts.googleapis.com/css2?family=Syne:wght@400;600;800&family=DM+Sans:wght@300;400;500&display=swap\" rel=\"stylesheet\">\n<script src=\"https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js\"></script>\n<style>\n  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }\n\n  :root {\n    --bg: #f0f2f8;\n    --surface: #ffffff;\n    --surface2: #f5f6fa;\n    --border: #e2e4ed;\n    --red: #e8284a;\n    --red-dim: rgba(232,40,74,0.1);\n    --green: #1a9e4a;\n    --yellow: #d4a000;\n    --blue: #0062cc;\n    --text: #1a1a2e;\n    --muted: #6b7280;\n  }\n\n  body {\n    background: var(--bg);\n    color: var(--text);\n    font-family: 'DM Sans', sans-serif;\n    min-height: 100vh;\n    padding: 40px 20px;\n  }\n\n  .header {\n    text-align: center;\n    margin-bottom: 48px;\n    animation: fadeDown 0.6s ease;\n  }\n\n  .header h1 {\n    font-family: 'Syne', sans-serif;\n    font-size: clamp(2rem, 5vw, 3.5rem);\n    font-weight: 800;\n    background: linear-gradient(135deg, #e8284a, #ff6b35);\n    -webkit-background-clip: text;\n    -webkit-text-fill-color: transparent;\n    letter-spacing: -1px;\n  }\n\n  .header p {\n    color: var(--muted);\n    margin-top: 8px;\n    font-size: 14px;\n    letter-spacing: 2px;\n    text-transform: uppercase;\n  }\n\n  .grid {\n    max-width: 1100px;\n    margin: 0 auto;\n    display: grid;\n    grid-template-columns: repeat(12, 1fr);\n    gap: 16px;\n  }\n\n  .card {\n    background: var(--surface);\n    border: 1px solid var(--border);\n    border-radius: 16px;\n    padding: 24px;\n    animation: fadeUp 0.5s ease both;\n    box-shadow: 0 2px 12px rgba(0,0,0,0.06);\n  }\n\n  .card:nth-child(1) { animation-delay: 0.1s; }\n  .card:nth-child(2) { animation-delay: 0.2s; }\n  .card:nth-child(3) { animation-delay: 0.3s; }\n  .card:nth-child(4) { animation-delay: 0.4s; }\n  .card:nth-child(5) { animation-delay: 0.5s; }\n  .card:nth-child(6) { animation-delay: 0.6s; }\n\n  .col-4  { grid-column: span 4; }\n  .col-5  { grid-column: span 5; }\n  .col-6  { grid-column: span 6; }\n  .col-7  { grid-column: span 7; }\n  .col-12 { grid-column: span 12; }\n\n  @media (max-width: 768px) {\n    .col-4, .col-5, .col-6, .col-7 { grid-column: span 12; }\n  }\n\n  .card-title {\n    font-family: 'Syne', sans-serif;\n    font-size: 11px;\n    font-weight: 600;\n    letter-spacing: 2px;\n    text-transform: uppercase;\n    color: var(--muted);\n    margin-bottom: 20px;\n    display: flex;\n    align-items: center;\n    gap: 8px;\n  }\n\n  .card-title::before {\n    content: '';\n    display: block;\n    width: 6px;\n    height: 6px;\n    border-radius: 50%;\n    background: var(--red);\n  }\n\n  .chart-wrap {\n    position: relative;\n    height: 220px;\n  }\n\n  .sentiment-pills {\n    display: flex;\n    flex-direction: column;\n    gap: 12px;\n    margin-top: 8px;\n  }\n\n  .pill-row {\n    display: flex;\n    align-items: center;\n    gap: 12px;\n  }\n\n  .pill-label {\n    font-size: 12px;\n    font-weight: 500;\n    width: 70px;\n    text-transform: capitalize;\n    color: var(--text);\n  }\n\n  .pill-bar-wrap {\n    flex: 1;\n    height: 8px;\n    background: var(--surface2);\n    border-radius: 99px;\n    overflow: hidden;\n  }\n\n  .pill-bar {\n    height: 100%;\n    border-radius: 99px;\n    transition: width 1s ease;\n  }\n\n  .pill-count {\n    font-size: 13px;\n    font-weight: 600;\n    width: 30px;\n    text-align: right;\n    color: var(--muted);\n  }\n\n  .tags {\n    display: flex;\n    flex-wrap: wrap;\n    gap: 8px;\n    margin-top: 8px;\n  }\n\n  .tag {\n    background: var(--surface2);\n    border: 1px solid var(--border);\n    border-radius: 99px;\n    padding: 5px 14px;\n    font-size: 12px;\n    font-weight: 500;\n    color: var(--text);\n    display: flex;\n    align-items: center;\n    gap: 6px;\n  }\n\n  .tag span {\n    background: var(--red);\n    color: white;\n    font-size: 10px;\n    font-weight: 700;\n    border-radius: 99px;\n    padding: 1px 6px;\n  }\n\n  .comment-list {\n    display: flex;\n    flex-direction: column;\n    gap: 12px;\n    max-height: 320px;\n    overflow-y: auto;\n    padding-right: 4px;\n  }\n\n  .comment-list::-webkit-scrollbar { width: 4px; }\n  .comment-list::-webkit-scrollbar-track { background: var(--surface2); border-radius: 99px; }\n  .comment-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }\n\n  .comment-item {\n    background: var(--surface2);\n    border-left: 3px solid var(--red);\n    border-radius: 0 10px 10px 0;\n    padding: 12px 16px;\n    font-size: 13px;\n    line-height: 1.6;\n    color: var(--text);\n  }\n\n  @keyframes fadeDown {\n    from { opacity: 0; transform: translateY(-20px); }\n    to   { opacity: 1; transform: translateY(0); }\n  }\n\n  @keyframes fadeUp {\n    from { opacity: 0; transform: translateY(24px); }\n    to   { opacity: 1; transform: translateY(0); }\n  }\n</style>\n</head>\n<body>\n\n<div class=\"header\">\n  <h1>Comments Insights</h1>\n  <p>YouTube Analytics Dashboard</p>\n</div>\n\n<div class=\"grid\">\n\n  <div class=\"card col-4\">\n    <div class=\"card-title\">Sentiment Overview</div>\n    <div class=\"chart-wrap\">\n      <canvas id=\"sentimentChart\"></canvas>\n    </div>\n  </div>\n\n  <div class=\"card col-4\">\n    <div class=\"card-title\">Sentiment Breakdown</div>\n    <div class=\"sentiment-pills\" id=\"sentimentBars\"></div>\n  </div>\n\n  <div class=\"card col-4\">\n    <div class=\"card-title\">Top Keywords</div>\n    <div class=\"tags\" id=\"keywordTags\"></div>\n  </div>\n\n  <div class=\"card col-6\">\n    <div class=\"card-title\">Top Complaints</div>\n    <div class=\"chart-wrap\">\n      <canvas id=\"complaintsChart\"></canvas>\n    </div>\n  </div>\n\n  <div class=\"card col-6\">\n    <div class=\"card-title\">Top Requests</div>\n    <div class=\"chart-wrap\">\n      <canvas id=\"requestsChart\"></canvas>\n    </div>\n  </div>\n\n  <div class=\"card col-12\">\n    <div class=\"card-title\">Most Engaged Comments</div>\n    <div class=\"comment-list\" id=\"commentList\"></div>\n  </div>\n\n</div>\n\n<script>\n  const data = {{ JSON.stringify($json) }};\n\n  const C = {\n    positive: '#1a9e4a',\n    negative: '#e8284a',\n    neutral:  '#d4a000',\n    red:      '#e8284a',\n    blue:     '#0062cc',\n    border:   '#e2e4ed',\n    muted:    '#6b7280',\n    text:     '#1a1a2e',\n  };\n\n  Chart.defaults.color = '#6b7280';\n  Chart.defaults.font.family = \"'DM Sans', sans-serif\";\n\n  // Sentiment Donut\n  const sentColors = data.sentiment.map(s =>\n    s.sentiment_label === 'positive' ? C.positive :\n    s.sentiment_label === 'negative' ? C.negative : C.neutral\n  );\n\n  new Chart(document.getElementById('sentimentChart'), {\n    type: 'doughnut',\n    data: {\n      labels: data.sentiment.map(s => s.sentiment_label),\n      datasets: [{\n        data: data.sentiment.map(s => s.count),\n        backgroundColor: sentColors,\n        borderColor: '#ffffff',\n        borderWidth: 3,\n        hoverOffset: 6,\n      }]\n    },\n    options: {\n      cutout: '72%',\n      plugins: {\n        legend: {\n          position: 'bottom',\n          labels: { padding: 16, boxWidth: 10, borderRadius: 3 }\n        }\n      }\n    }\n  });\n\n  // Sentiment Bars\n  const total = data.sentiment.reduce((a, s) => a + s.count, 0);\n  const barsEl = document.getElementById('sentimentBars');\n  data.sentiment.forEach(s => {\n    const pct = Math.round((s.count / total) * 100);\n    const color = s.sentiment_label === 'positive' ? C.positive :\n                  s.sentiment_label === 'negative' ? C.negative : C.neutral;\n    barsEl.innerHTML += `\n      <div class=\"pill-row\">\n        <span class=\"pill-label\">${s.sentiment_label}</span>\n        <div class=\"pill-bar-wrap\">\n          <div class=\"pill-bar\" style=\"width:${pct}%;background:${color}\"></div>\n        </div>\n        <span class=\"pill-count\">${s.count}</span>\n      </div>`;\n  });\n\n  // Keywords\n  const tagsEl = document.getElementById('keywordTags');\n  data.keywords.forEach(k => {\n    tagsEl.innerHTML += `<div class=\"tag\">${k.keyword}<span>${k.count}</span></div>`;\n  });\n\n  // Complaints Chart\n  new Chart(document.getElementById('complaintsChart'), {\n    type: 'bar',\n    data: {\n      labels: data.topComplaints.map(c => c.issue),\n      datasets: [{\n        label: 'Count',\n        data: data.topComplaints.map(c => c.count),\n        backgroundColor: 'rgba(232,40,74,0.12)',\n        borderColor: C.red,\n        borderWidth: 2,\n        borderRadius: 6,\n      }]\n    },\n    options: {\n      indexAxis: 'y',\n      plugins: { legend: { display: false } },\n      scales: {\n        x: { grid: { color: '#e2e4ed' }, ticks: { stepSize: 1 } },\n        y: { grid: { display: false } }\n      }\n    }\n  });\n\n  // Requests Chart\n  new Chart(document.getElementById('requestsChart'), {\n    type: 'bar',\n    data: {\n      labels: data.topRequests.map(r => r.request),\n      datasets: [{\n        label: 'Count',\n        data: data.topRequests.map(r => r.count),\n        backgroundColor: 'rgba(0,98,204,0.12)',\n        borderColor: C.blue,\n        borderWidth: 2,\n        borderRadius: 6,\n      }]\n    },\n    options: {\n      indexAxis: 'y',\n      plugins: { legend: { display: false } },\n      scales: {\n        x: { grid: { color: '#e2e4ed' }, ticks: { stepSize: 1 } },\n        y: { grid: { display: false } }\n      }\n    }\n  });\n\n  // Comments\n  const listEl = document.getElementById('commentList');\n  data.mostEngaged.forEach(c => {\n    listEl.innerHTML += `<div class=\"comment-item\">${c.text}</div>`;\n  });\n</script>\n</body>\n</html>",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "content-Type",
+                "value": "text/html"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        2624,
+        -16
+      ],
+      "id": "f57c59fe-4a50-4632-8d4c-bff43b34ae6b",
+      "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "=<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n<title>Comments Insights</title>\n<link href=\"https://fonts.googleapis.com/css2?family=Syne:wght@400;600;800&family=DM+Sans:wght@300;400;500&display=swap\" rel=\"stylesheet\">\n<script src=\"https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js\"></script>\n<style>\n  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }\n\n  :root {\n    --bg: #f0f2f8;\n    --surface: #ffffff;\n    --surface2: #f5f6fa;\n    --border: #e2e4ed;\n    --red: #e8284a;\n    --red-dim: rgba(232,40,74,0.1);\n    --green: #1a9e4a;\n    --yellow: #d4a000;\n    --blue: #0062cc;\n    --text: #1a1a2e;\n    --muted: #6b7280;\n  }\n\n  body {\n    background: var(--bg);\n    color: var(--text);\n    font-family: 'DM Sans', sans-serif;\n    min-height: 100vh;\n    padding: 40px 20px;\n  }\n\n  .header {\n    text-align: center;\n    margin-bottom: 48px;\n    animation: fadeDown 0.6s ease;\n  }\n\n  .header h1 {\n    font-family: 'Syne', sans-serif;\n    font-size: clamp(2rem, 5vw, 3.5rem);\n    font-weight: 800;\n    background: linear-gradient(135deg, #e8284a, #ff6b35);\n    -webkit-background-clip: text;\n    -webkit-text-fill-color: transparent;\n    letter-spacing: -1px;\n  }\n\n  .header p {\n    color: var(--muted);\n    margin-top: 8px;\n    font-size: 14px;\n    letter-spacing: 2px;\n    text-transform: uppercase;\n  }\n\n  .grid {\n    max-width: 1100px;\n    margin: 0 auto;\n    display: grid;\n    grid-template-columns: repeat(12, 1fr);\n    gap: 16px;\n  }\n\n  .card {\n    background: var(--surface);\n    border: 1px solid var(--border);\n    border-radius: 16px;\n    padding: 24px;\n    animation: fadeUp 0.5s ease both;\n    box-shadow: 0 2px 12px rgba(0,0,0,0.06);\n  }\n\n  .card:nth-child(1) { animation-delay: 0.1s; }\n  .card:nth-child(2) { animation-delay: 0.2s; }\n  .card:nth-child(3) { animation-delay: 0.3s; }\n  .card:nth-child(4) { animation-delay: 0.4s; }\n  .card:nth-child(5) { animation-delay: 0.5s; }\n  .card:nth-child(6) { animation-delay: 0.6s; }\n\n  .col-4  { grid-column: span 4; }\n  .col-5  { grid-column: span 5; }\n  .col-6  { grid-column: span 6; }\n  .col-7  { grid-column: span 7; }\n  .col-12 { grid-column: span 12; }\n\n  @media (max-width: 768px) {\n    .col-4, .col-5, .col-6, .col-7 { grid-column: span 12; }\n  }\n\n  .card-title {\n    font-family: 'Syne', sans-serif;\n    font-size: 11px;\n    font-weight: 600;\n    letter-spacing: 2px;\n    text-transform: uppercase;\n    color: var(--muted);\n    margin-bottom: 20px;\n    display: flex;\n    align-items: center;\n    gap: 8px;\n  }\n\n  .card-title::before {\n    content: '';\n    display: block;\n    width: 6px;\n    height: 6px;\n    border-radius: 50%;\n    background: var(--red);\n  }\n\n  .chart-wrap {\n    position: relative;\n    height: 220px;\n  }\n\n  .sentiment-pills {\n    display: flex;\n    flex-direction: column;\n    gap: 12px;\n    margin-top: 8px;\n  }\n\n  .pill-row {\n    display: flex;\n    align-items: center;\n    gap: 12px;\n  }\n\n  .pill-label {\n    font-size: 12px;\n    font-weight: 500;\n    width: 70px;\n    text-transform: capitalize;\n    color: var(--text);\n  }\n\n  .pill-bar-wrap {\n    flex: 1;\n    height: 8px;\n    background: var(--surface2);\n    border-radius: 99px;\n    overflow: hidden;\n  }\n\n  .pill-bar {\n    height: 100%;\n    border-radius: 99px;\n    transition: width 1s ease;\n  }\n\n  .pill-count {\n    font-size: 13px;\n    font-weight: 600;\n    width: 30px;\n    text-align: right;\n    color: var(--muted);\n  }\n\n  .tags {\n    display: flex;\n    flex-wrap: wrap;\n    gap: 8px;\n    margin-top: 8px;\n  }\n\n  .tag {\n    background: var(--surface2);\n    border: 1px solid var(--border);\n    border-radius: 99px;\n    padding: 5px 14px;\n    font-size: 12px;\n    font-weight: 500;\n    color: var(--text);\n    display: flex;\n    align-items: center;\n    gap: 6px;\n  }\n\n  .tag span {\n    background: var(--red);\n    color: white;\n    font-size: 10px;\n    font-weight: 700;\n    border-radius: 99px;\n    padding: 1px 6px;\n  }\n\n  .comment-list {\n    display: flex;\n    flex-direction: column;\n    gap: 12px;\n    max-height: 320px;\n    overflow-y: auto;\n    padding-right: 4px;\n  }\n\n  .comment-list::-webkit-scrollbar { width: 4px; }\n  .comment-list::-webkit-scrollbar-track { background: var(--surface2); border-radius: 99px; }\n  .comment-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }\n\n  .comment-item {\n    background: var(--surface2);\n    border-left: 3px solid var(--red);\n    border-radius: 0 10px 10px 0;\n    padding: 12px 16px;\n    font-size: 13px;\n    line-height: 1.6;\n    color: var(--text);\n  }\n\n  @keyframes fadeDown {\n    from { opacity: 0; transform: translateY(-20px); }\n    to   { opacity: 1; transform: translateY(0); }\n  }\n\n  @keyframes fadeUp {\n    from { opacity: 0; transform: translateY(24px); }\n    to   { opacity: 1; transform: translateY(0); }\n  }\n</style>\n</head>\n<body>\n\n<div class=\"header\">\n  <h1>Comments Insights</h1>\n  <p>YouTube Analytics Dashboard</p>\n</div>\n\n<div class=\"grid\">\n\n  <div class=\"card col-4\">\n    <div class=\"card-title\">Sentiment Overview</div>\n    <div class=\"chart-wrap\">\n      <canvas id=\"sentimentChart\"></canvas>\n    </div>\n  </div>\n\n  <div class=\"card col-4\">\n    <div class=\"card-title\">Sentiment Breakdown</div>\n    <div class=\"sentiment-pills\" id=\"sentimentBars\"></div>\n  </div>\n\n  <div class=\"card col-4\">\n    <div class=\"card-title\">Top Keywords</div>\n    <div class=\"tags\" id=\"keywordTags\"></div>\n  </div>\n\n  <div class=\"card col-6\">\n    <div class=\"card-title\">Top Complaints</div>\n    <div class=\"chart-wrap\">\n      <canvas id=\"complaintsChart\"></canvas>\n    </div>\n  </div>\n\n  <div class=\"card col-6\">\n    <div class=\"card-title\">Top Requests</div>\n    <div class=\"chart-wrap\">\n      <canvas id=\"requestsChart\"></canvas>\n    </div>\n  </div>\n\n  <div class=\"card col-12\">\n    <div class=\"card-title\">Most Engaged Comments</div>\n    <div class=\"comment-list\" id=\"commentList\"></div>\n  </div>\n\n</div>\n\n<script>\n  const data = {{ JSON.stringify($json) }};\n\n  const C = {\n    positive: '#1a9e4a',\n    negative: '#e8284a',\n    neutral:  '#d4a000',\n    red:      '#e8284a',\n    blue:     '#0062cc',\n    border:   '#e2e4ed',\n    muted:    '#6b7280',\n    text:     '#1a1a2e',\n  };\n\n  Chart.defaults.color = '#6b7280';\n  Chart.defaults.font.family = \"'DM Sans', sans-serif\";\n\n  // Sentiment Donut\n  const sentColors = data.sentiment.map(s =>\n    s.sentiment_label === 'positive' ? C.positive :\n    s.sentiment_label === 'negative' ? C.negative : C.neutral\n  );\n\n  new Chart(document.getElementById('sentimentChart'), {\n    type: 'doughnut',\n    data: {\n      labels: data.sentiment.map(s => s.sentiment_label),\n      datasets: [{\n        data: data.sentiment.map(s => s.count),\n        backgroundColor: sentColors,\n        borderColor: '#ffffff',\n        borderWidth: 3,\n        hoverOffset: 6,\n      }]\n    },\n    options: {\n      cutout: '72%',\n      plugins: {\n        legend: {\n          position: 'bottom',\n          labels: { padding: 16, boxWidth: 10, borderRadius: 3 }\n        }\n      }\n    }\n  });\n\n  // Sentiment Bars\n  const total = data.sentiment.reduce((a, s) => a + s.count, 0);\n  const barsEl = document.getElementById('sentimentBars');\n  data.sentiment.forEach(s => {\n    const pct = Math.round((s.count / total) * 100);\n    const color = s.sentiment_label === 'positive' ? C.positive :\n                  s.sentiment_label === 'negative' ? C.negative : C.neutral;\n    barsEl.innerHTML += `\n      <div class=\"pill-row\">\n        <span class=\"pill-label\">${s.sentiment_label}</span>\n        <div class=\"pill-bar-wrap\">\n          <div class=\"pill-bar\" style=\"width:${pct}%;background:${color}\"></div>\n        </div>\n        <span class=\"pill-count\">${s.count}</span>\n      </div>`;\n  });\n\n  // Keywords\n  const tagsEl = document.getElementById('keywordTags');\n  data.keywords.forEach(k => {\n    tagsEl.innerHTML += `<div class=\"tag\">${k.keyword}<span>${k.count}</span></div>`;\n  });\n\n  // Complaints Chart\n  new Chart(document.getElementById('complaintsChart'), {\n    type: 'bar',\n    data: {\n      labels: data.topComplaints.map(c => c.issue),\n      datasets: [{\n        label: 'Count',\n        data: data.topComplaints.map(c => c.count),\n        backgroundColor: 'rgba(232,40,74,0.12)',\n        borderColor: C.red,\n        borderWidth: 2,\n        borderRadius: 6,\n      }]\n    },\n    options: {\n      indexAxis: 'y',\n      plugins: { legend: { display: false } },\n      scales: {\n        x: { grid: { color: '#e2e4ed' }, ticks: { stepSize: 1 } },\n        y: { grid: { display: false } }\n      }\n    }\n  });\n\n  // Requests Chart\n  new Chart(document.getElementById('requestsChart'), {\n    type: 'bar',\n    data: {\n      labels: data.topRequests.map(r => r.request),\n      datasets: [{\n        label: 'Count',\n        data: data.topRequests.map(r => r.count),\n        backgroundColor: 'rgba(0,98,204,0.12)',\n        borderColor: C.blue,\n        borderWidth: 2,\n        borderRadius: 6,\n      }]\n    },\n    options: {\n      indexAxis: 'y',\n      plugins: { legend: { display: false } },\n      scales: {\n        x: { grid: { color: '#e2e4ed' }, ticks: { stepSize: 1 } },\n        y: { grid: { display: false } }\n      }\n    }\n  });\n\n  // Comments\n  const listEl = document.getElementById('commentList');\n  data.mostEngaged.forEach(c => {\n    listEl.innerHTML += `<div class=\"comment-item\">${c.text}</div>`;\n  });\n</script>\n</body>\n</html>",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "content-Type",
+                "value": "text/html"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        2560,
+        272
+      ],
+      "id": "158cd153-fdc9-4db8-af61-882673f1b480",
+      "name": "Respond to Webhook2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d924d922-6e8e-42f2-9f1c-8cfa620169e5",
+              "name": "videoId",
+              "value": "={{ $('Edit Fields').item.json.videoId }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2208,
+        -16
+      ],
+      "id": "26c4e091-4872-4c00-bc95-bf95909a0fc7",
+      "name": "set video id2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d924d922-6e8e-42f2-9f1c-8cfa620169e5",
+              "name": "videoId",
+              "value": "={{ $('Edit Fields').item.json.videoId }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2080,
+        272
+      ],
+      "id": "d3ae3a8a-d19b-4a41-9048-0ed2d1fdf877",
+      "name": "set videoid2"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "If video id empty",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If video id empty": {
+      "main": [
+        [],
+        [
+          {
+            "node": "count id in comments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'Fetch&StoreYT'": {
+      "main": [
+        [
+          {
+            "node": "Call 'AnalyzeYT'1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "count ivideoId n analysis table": {
+      "main": [
+        [
+          {
+            "node": "if analysis exist",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "if analysis exist": {
+      "main": [
+        [
+          {
+            "node": "set video id1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "set video id",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If comment id exists": {
+      "main": [
+        [
+          {
+            "node": "count ivideoId n analysis table",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "set videoid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "count id in comments": {
+      "main": [
+        [
+          {
+            "node": "If comment id exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "set videoid": {
+      "main": [
+        [
+          {
+            "node": "Call 'Fetch&StoreYT'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "set video id": {
+      "main": [
+        [
+          {
+            "node": "Call 'AnalyzeYT'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'AnalyzeYT'1": {
+      "main": [
+        [
+          {
+            "node": "set videoid2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'AnalyzeYT'": {
+      "main": [
+        [
+          {
+            "node": "set video id2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "set video id1": {
+      "main": [
+        [
+          {
+            "node": "Call 'FinalAggregationYT'2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query1": {
+      "main": [
+        []
+      ]
+    },
+    "Call 'FinalAggregationYT'2": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'FinalAggregationYT'1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'FinalAggregationYT'": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "set video id2": {
+      "main": [
+        [
+          {
+            "node": "Call 'FinalAggregationYT'1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "set videoid2": {
+      "main": [
+        [
+          {
+            "node": "Call 'FinalAggregationYT'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true
+  },
+  "versionId": "95c951dd-896c-4917-bacb-c55dce8b1628",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "992c800fc61a6acac872fa5bf86f373eb2db533c11c88e0421ee514c5baf036e"
+  },
+  "id": "es2IniZXrNme4s7s",
+  "tags": []
+}

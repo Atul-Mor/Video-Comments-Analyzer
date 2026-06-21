@@ -1,0 +1,376 @@
+{
+  "name": "FinalAggregationYT",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n  subtopic AS issue,\n  COUNT(*) AS count\nFROM analysis\nWHERE videoId = '{{$json.videoId}}'\nAND category = 'content_quality'\nGROUP BY subtopic\nORDER BY count DESC\nLIMIT 5;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        640,
+        16
+      ],
+      "id": "45599e17-8f4e-4128-9ab3-f538267087a4",
+      "name": "Top complaints",
+      "credentials": {
+        "mySql": {
+          "id": "wwGtWWSfKeg2Ev2w",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "75201182-6a0f-414e-9bcc-cbe3abab394b",
+              "name": "videoId",
+              "value": "={{$json.videoId}}",
+              "type": "string"
+            },
+            {
+              "id": "640f28b5-7582-4486-917f-1b1e2cbec9c3",
+              "name": "",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        192,
+        16
+      ],
+      "id": "277b9aa1-7134-4d7a-aece-39ff0b3ba16c",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n  sentiment_label,\n  COUNT(*) as count\nFROM analysis\nWHERE videoId = '{{$json.videoId}}'\nGROUP BY sentiment_label;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        480,
+        -320
+      ],
+      "id": "ddfa3821-77a0-4fc7-a74a-e92d629a48f4",
+      "name": "sentiment distribution",
+      "credentials": {
+        "mySql": {
+          "id": "wwGtWWSfKeg2Ev2w",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "numberInputs": 4
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1328,
+        -144
+      ],
+      "id": "a93de6ca-5882-46ed-a0b8-0387d02b919b",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "jsCode": "const result = {\n  sentiment: null,\n  topRequests: null,\n  topComplaints: null,\n  keywords: null,\n  mostEngaged: null\n};\n\nitems.forEach(item => {\n  const data = item.json;\n\n  if (data.sentiment_label || data.count) {\n    result.sentiment = result.sentiment || [];\n    result.sentiment.push(data);\n  }\n\n  if (data.topRequests) {\n    result.topRequests = data.topRequests;\n  }\n\n  if (data.topComplaints) {\n    result.topComplaints = data.topComplaints;\n  }\n\n  if (data.keywords) {\n    result.keywords = data.keywords;\n  }\n\n  if (data.id) {\n    result.mostEngaged = result.mostEngaged || [];\n    result.mostEngaged.push(data);\n  }\n});\n\nreturn [{ json: result }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1584,
+        -128
+      ],
+      "id": "59c558af-cc26-4a56-8463-6578b267da49",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n  subtopic AS request,\n  COUNT(*) AS count\nFROM analysis\nWHERE videoId = '{{$json.videoId}}'\nAND category = 'topic_request'\nGROUP BY subtopic\nORDER BY count DESC\nLIMIT 5;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        624,
+        -160
+      ],
+      "id": "1d8a1bd0-21f1-4766-9e83-15c4fd7c3286",
+      "name": "Top requests",
+      "credentials": {
+        "mySql": {
+          "id": "wwGtWWSfKeg2Ev2w",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -16,
+        32
+      ],
+      "id": "91ded807-962e-467f-bf5f-c3ba63bf36af",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "jsCode": "const freq = {};\n\nitems.forEach(item => {\n  let arr = [];\n\n  try {\n    arr = typeof item.json.keywords === \"string\"\n      ? JSON.parse(item.json.keywords)\n      : item.json.keywords || [];\n  } catch {\n    arr = [];\n  }\n\n  arr.forEach(word => {\n    if (!word) return;\n    freq[word] = (freq[word] || 0) + 1;\n  });\n});\n\n// sort + top 10\nconst topKeywords = Object.entries(freq)\n  .sort((a, b) => b[1] - a[1])\n  .slice(0, 10)\n  .map(([k, v]) => ({ keyword: k, count: v }));\n\nreturn [{\n  json: {\n    keywords: topKeywords\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        976,
+        32
+      ],
+      "id": "e31d2ff4-a265-4e30-ac70-a94530b4a71a",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT keywords\nFROM analysis\nWHERE videoId = '{{$json.videoId}}';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        800,
+        160
+      ],
+      "id": "0039b4ec-5d00-448b-9796-c6b9340ef9ae",
+      "name": "fetch keywords",
+      "credentials": {
+        "mySql": {
+          "id": "wwGtWWSfKeg2Ev2w",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        864,
+        -96
+      ],
+      "id": "fd74ff1c-fee6-4d57-9e1b-e270ee9ac2bf",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const topComplaints = [];\nconst topRequests = [];\n\nitems.forEach(item => {\n  if (item.json.issue) {\n    topComplaints.push(item.json);\n  }\n\n  if (item.json.request) {\n    topRequests.push(item.json);\n  }\n});\n\nreturn [{\n  json: {\n    topComplaints,\n    topRequests\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1056,
+        -128
+      ],
+      "id": "68b89cb8-267d-4a96-8a80-ef299238fdbc",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id, videoId, text\nFROM comments\nWHERE videoId = '{{$json.videoId}}'\nORDER BY likeCount DESC, totalReplyCount DESC\nLIMIT 10;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        656,
+        336
+      ],
+      "id": "c9dc4392-e50b-421c-bd5e-35d931df2e6e",
+      "name": "most engaged comments",
+      "credentials": {
+        "mySql": {
+          "id": "wwGtWWSfKeg2Ev2w",
+          "name": "MySQL account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Top complaints": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "sentiment distribution",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Top requests",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Top complaints",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "most engaged comments",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "fetch keywords",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "sentiment distribution": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Top requests": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "fetch keywords": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "most engaged comments": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "saveDataSuccessExecution": "all",
+    "saveExecutionProgress": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "2ba05010-11b1-4807-af71-40039ea54d85",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "992c800fc61a6acac872fa5bf86f373eb2db533c11c88e0421ee514c5baf036e"
+  },
+  "id": "b6Byp9BT1i5yG9FK",
+  "tags": []
+}

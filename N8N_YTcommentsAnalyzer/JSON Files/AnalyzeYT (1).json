@@ -1,0 +1,392 @@
+{
+  "name": "AnalyzeYT",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select * from comments",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        1712,
+        352
+      ],
+      "id": "f18d6ba3-331d-400d-a877-a3995dc40282",
+      "name": "comments table",
+      "credentials": {
+        "mySql": {
+          "id": "wwGtWWSfKeg2Ev2w",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "CREATE TABLE analysis (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  commentId VARCHAR(255),\n  sentiment_label ENUM('positive','negative','neutral'),\n  topics JSON,\n  is_complaint BOOLEAN,\n  is_request BOOLEAN,\n  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n);",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        1152,
+        352
+      ],
+      "id": "73ebc2ff-840b-4567-a953-32d1496573bc",
+      "name": "Analysis table",
+      "credentials": {
+        "mySql": {
+          "id": "wwGtWWSfKeg2Ev2w",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE comments\nSET processed = FALSE\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        864,
+        352
+      ],
+      "id": "af969b27-ec9f-4d86-afa4-c290c1600a2a",
+      "name": "update comments table",
+      "credentials": {
+        "mySql": {
+          "id": "wwGtWWSfKeg2Ev2w",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "-- select * from analysis where videoId != 'fZVwFbemo7k' && videoId != 'oafxkMv4xnc'\n\nselect * from analysis ",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        1456,
+        352
+      ],
+      "id": "1a666b6a-3578-4594-8a97-940e7c1623c7",
+      "name": "Execute a SQL query1",
+      "credentials": {
+        "mySql": {
+          "id": "wwGtWWSfKeg2Ev2w",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        96,
+        16
+      ],
+      "id": "e77dd1aa-f8e7-459f-b27d-e2c31d5adde8",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a718779b-9dcf-4d97-8460-f4fe6dc2007c",
+              "name": "videoId",
+              "value": "={{ $json.videoId }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        320,
+        16
+      ],
+      "id": "06b0d146-baed-4843-a91c-737c695f213e",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT *\nFROM comments\nWHERE processed = 0\n  and videoId = '{{ $json.videoId }}'\nLIMIT 10;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        528,
+        16
+      ],
+      "id": "f6ae6513-2df0-4ea9-bec9-74211931bd53",
+      "name": "Execute a SQL query",
+      "credentials": {
+        "mySql": {
+          "id": "wwGtWWSfKeg2Ev2w",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "batchSize": 10,
+        "options": {
+          "reset": false
+        }
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        736,
+        16
+      ],
+      "id": "7b69948a-8423-422b-a534-7012940cb943",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "llama3:latest",
+          "mode": "list",
+          "cachedResultName": "llama3:latest"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are an AI that analyzes YouTube comments.\n\nReturn ONLY valid JSON. Do NOT include explanations, markdown, or extra text.\n\nAnalyze the following comment and extract structured insights.\n\nComment:\n\"{{ $json.text }}\"\n\nOutput strictly in this JSON format:\n\n{\n  \"id:\":{{ $json.id }},\n  \"vidoId\": {{ $json.videoId }},\n  \"sentiment_label\": \"positive | neutral | negative\",\n  \"is_complaint\": true/false,\n  \"is_request\": true/false,\n  \"category\": \"appreciation | complaint | suggestion | question | spam | other\",\n  \"subtopic\": \"short phrase (2-4 words summarizing the main point)\",\n  \"keywords\": [\"keyword1\", \"keyword2\", \"keyword3\"]\n}\n\nRules:\n- sentiment_label must be only: positive, neutral, or negative\n- is_complaint = true only if user is unhappy or reporting a problem\n- is_request = true only if user is asking for something\n- category must be one of the predefined values\n- subtopic must be concise (no full sentences)\n- keywords must be 2–5 relevant lowercase words\n- Do NOT include videoId or commentId\n- Do NOT include timestamps or SQL functions\n- Do NOT return null values\n- Ensure the output is valid JSON (no trailing commas, no text outside JSON)\n- it is mandatory to attach videoId and id in the output"
+            }
+          ]
+        },
+        "options": {
+          "format": "json"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.ollama",
+      "typeVersion": 1,
+      "position": [
+        1088,
+        16
+      ],
+      "id": "33ec1033-1e5e-4491-a05d-6ffe21a5c010",
+      "name": "Message a model",
+      "alwaysOutputData": true,
+      "notesInFlow": false,
+      "credentials": {
+        "ollamaApi": {
+          "id": "4XKObq2pscefnnNF",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const results = [];\n\n// Auto-balance missing closing braces/brackets\nfunction balanceJson(str) {\n  let opens = 0, arrOpens = 0;\n  let inString = false, escaped = false;\n\n  for (const ch of str) {\n    if (escaped)          { escaped = false; continue; }\n    if (ch === '\\\\')      { escaped = true; continue; }\n    if (ch === '\"')       { inString = !inString; continue; }\n    if (inString)         continue;\n    if (ch === '{')       opens++;\n    else if (ch === '}')  opens--;\n    else if (ch === '[')  arrOpens++;\n    else if (ch === ']')  arrOpens--;\n  }\n\n  // Append whatever is missing\n  return str\n    + ']'.repeat(Math.max(0, arrOpens))\n    + '}'.repeat(Math.max(0, opens));\n}\n\nfor (const item of $input.all()) {\n  let raw = item.json.content || item.json.message?.content || \"\";\n\n  let text = raw\n    .replace(/```json\\s*/gi, \"\")\n    .replace(/```/g, \"\")\n    .trim();\n\n  const match = text.match(/\\{[\\s\\S]*/);\n  if (!match) {\n    results.push({ json: { _parseError: \"No JSON found\", _raw: raw } });\n    continue;\n  }\n\n  let jsonStr = match[0];\n\n  // Fix unquoted string values\n  jsonStr = jsonStr.replace(\n    /:\\s*([A-Za-z][A-Za-z0-9_\\-]*)\\s*([,\\}\\n])/g,\n    (m, val, end) => {\n      if (['true', 'false', 'null'].includes(val)) return `: ${val}${end}`;\n      return `: \"${val}\"${end}`;\n    }\n  );\n\n  // Auto-close missing braces/brackets\n  jsonStr = balanceJson(jsonStr);\n\n  let parsed;\n  try {\n    parsed = JSON.parse(jsonStr);\n  } catch (e) {\n    results.push({ json: { _parseError: e.message, _raw: raw, _cleaned: jsonStr } });\n    continue;\n  }\n\n  const mapped = {\n    commentId:       parsed.id || parsed.commentId || null,\n    videoId:         parsed.videoId || null,\n    sentiment_label: parsed.sentiment_label || \"neutral\",\n    topics:          parsed.topics || null,\n    is_complaint:    parsed.is_complaint ? 1 : 0,\n    is_request:      parsed.is_request   ? 1 : 0,\n    category:        parsed.category     || null,\n    subtopic:        parsed.subtopic     || null,\n    keywords:        Array.isArray(parsed.keywords)\n                       ? JSON.stringify(parsed.keywords)\n                       : parsed.keywords || null,\n    created_at:      new Date().toISOString().replace(\"T\", \" \").substring(0, 19),\n  };\n\n  results.push({ json: mapped });\n}\n\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1552,
+        16
+      ],
+      "id": "2a8c84d2-53fd-47dd-af90-99f2bec04a46",
+      "name": "PARSE AI OUTPUT"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO analysis (\n  commentId, videoId, sentiment_label, topics,\n  is_complaint, is_request, category, subtopic, keywords, created_at\n) VALUES (\n  '{{ $json.commentId }}',\n  '{{ $json.videoId }}',\n  '{{ $json.sentiment_label }}',\n  {{ $json.topics ? `'${$json.topics}'` : 'NULL' }},\n  {{ $json.is_complaint }},\n  {{ $json.is_request }},\n  '{{ $json.category }}',\n  '{{ $json.subtopic }}',\n  '{{ $json.keywords }}',\n  '{{ $json.created_at }}'\n)\nON DUPLICATE KEY UPDATE\n  sentiment_label = VALUES(sentiment_label),\n  topics          = VALUES(topics),\n  is_complaint    = VALUES(is_complaint),\n  is_request      = VALUES(is_request),\n  category        = VALUES(category),\n  subtopic        = VALUES(subtopic),\n  keywords        = VALUES(keywords),\n  created_at      = VALUES(created_at);",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        1824,
+        16
+      ],
+      "id": "1bc000e7-32a3-43cb-84b2-c0a5e84a7b07",
+      "name": "store in analysis table",
+      "credentials": {
+        "mySql": {
+          "id": "wwGtWWSfKeg2Ev2w",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE comments \nSET processed = 1 \nWHERE id = '{{ $json.commentId }}'\nAND videoId = '{{ $json.videoId }}';",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        2304,
+        64
+      ],
+      "id": "26cf9e17-969a-4520-879d-43718ccb7f04",
+      "name": "mark processed",
+      "credentials": {
+        "mySql": {
+          "id": "wwGtWWSfKeg2Ev2w",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return $('PARSE AI OUTPUT').all().map(item => ({\n  json: {\n    commentId: item.json.commentId,\n    videoId:   item.json.videoId\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2032,
+        16
+      ],
+      "id": "d7d5f305-5587-424e-82c9-5cd36107076d",
+      "name": "get IDs",
+      "executeOnce": true
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "comments table": {
+      "main": [
+        []
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "PARSE AI OUTPUT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PARSE AI OUTPUT": {
+      "main": [
+        [
+          {
+            "node": "store in analysis table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "store in analysis table": {
+      "main": [
+        [
+          {
+            "node": "get IDs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "mark processed": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get IDs": {
+      "main": [
+        [
+          {
+            "node": "mark processed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "saveDataSuccessExecution": "all",
+    "saveExecutionProgress": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "22aecf09-9d4b-48e2-b6ad-4576795c4fab",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "992c800fc61a6acac872fa5bf86f373eb2db533c11c88e0421ee514c5baf036e"
+  },
+  "id": "wWARIsg1nZng1mcM",
+  "tags": []
+}

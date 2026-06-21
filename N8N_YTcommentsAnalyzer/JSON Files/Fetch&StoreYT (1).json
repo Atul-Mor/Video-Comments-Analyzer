@@ -1,0 +1,474 @@
+{
+  "name": "Fetch&StoreYT",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "https://www.googleapis.com/youtube/v3/commentThreads",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "part",
+              "value": "snippet"
+            },
+            {
+              "name": "videoId",
+              "value": "={{$json.videoId}}"
+            },
+            {
+              "name": "maxResults",
+              "value": "100"
+            },
+            {
+              "name": "order",
+              "value": "relevance"
+            },
+            {
+              "name": "pageToken",
+              "value": "={{$json.pageToken}} || {{ $json.nextPageToken }}"
+            },
+            {
+              "name": "key",
+              "value": "={{$env.YOUTUBE_API_KEY}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        624,
+        0
+      ],
+      "id": "73326863-20ee-429d-8a2b-4081b2a9ad28",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "df3d6e83-5557-408c-8c37-567d13c2398d",
+              "leftValue": "={{ $json.nextPageToken }}",
+              "rightValue": {},
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "ef8ca209-d67c-4f76-a0ff-7275af7f75c6",
+              "leftValue": "={{$runIndex}}",
+              "rightValue": 1,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1808,
+        -32
+      ],
+      "id": "69060014-be4c-4156-8a64-e6478cc33810",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.flatMap(item => {\n  const comments = item.json.items || [];  // ✅ extract array\n\n  return comments.map(c => {\n    const snippet = c.snippet || {};\n    const top = snippet.topLevelComment || {};\n    const s = top.snippet || {};\n\n    return {\n      json: {\n        id: c.id || \"\",\n        videoId: snippet.videoId || \"\",\n        channelId: snippet.channelId || \"\",\n        text: (s.textOriginal || \"\")\n          .replace(/'/g, \"''\")\n          .replace(/\\n/g, \" \")\n          .replace(/\\r/g, \" \"),\n        authorName: s.authorDisplayName || \"\",\n        authorChannelId: s.authorChannelId?.value || \"\",\n        likeCount: s.likeCount || 0,\n        totalReplyCount: snippet.totalReplyCount || 0,\n        publishedAt: s.publishedAt || null\n      }\n    };\n  });\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1184,
+        -16
+      ],
+      "id": "3ece5ba8-ad32-4bfa-9d63-3100e19ed370",
+      "name": "Split"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "CREATE TABLE comments (\n  id VARCHAR(50) PRIMARY KEY,\n  videoId VARCHAR(50),\n  channelId VARCHAR(50),\n\n  text TEXT,\n\n  authorName VARCHAR(255),\n  authorChannelId VARCHAR(100),\n\n  likeCount INT DEFAULT 0,\n  totalReplyCount INT DEFAULT 0,\n\n  publishedAt DATETIME,\n\n  processed BOOLEAN DEFAULT FALSE\n);",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        1536,
+        256
+      ],
+      "id": "65bd2d42-edbc-4b83-994d-0527bf31a039",
+      "name": "comments table",
+      "credentials": {
+        "mySql": {
+          "id": "wwGtWWSfKeg2Ev2w",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "CREATE TABLE IF NOT EXISTS analysis (\n  commentId VARCHAR(255),\n  sentiment VARCHAR(50),\n  topic VARCHAR(255),\n  category VARCHAR(50),\n  contentIdea TEXT\n);",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        1264,
+        256
+      ],
+      "id": "9fb409a5-451a-4d40-a1d4-8a068db7401f",
+      "name": "Analysis table",
+      "credentials": {
+        "mySql": {
+          "id": "wwGtWWSfKeg2Ev2w",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "918c9ef3-53f9-4aa3-9072-105f8374fd27",
+              "name": "videoId",
+              "value": "={{$json.videoId}}",
+              "type": "string"
+            },
+            {
+              "id": "2420fef4-e640-4078-aee1-adfe51e6108c",
+              "name": "pageToken",
+              "value": "\"\"",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        416,
+        0
+      ],
+      "id": "7ba95370-4db7-4c1d-a802-2b6ef33f333a",
+      "name": "set page token"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5166adc9-ddcb-4d29-a9dd-478cd463e84e",
+              "name": "nextPageToken",
+              "value": "={{ $json.nextPageToken || \"\" }}",
+              "type": "string"
+            },
+            {
+              "id": "4a9e17d0-e8d5-4164-80b7-1c2b4516ecc6",
+              "name": "videoId",
+              "value": "={{ $json.videoId }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1216,
+        -176
+      ],
+      "id": "74bd1972-61c8-48ac-a70e-245a9b60e79e",
+      "name": "set next page token"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1600,
+        -160
+      ],
+      "id": "615fedff-d692-4097-908d-e616d1e23fe0",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "table": {
+          "__rl": true,
+          "value": "comments",
+          "mode": "list",
+          "cachedResultName": "comments"
+        },
+        "dataMode": "defineBelow",
+        "valuesToSend": {
+          "values": [
+            {
+              "column": "id",
+              "value": "={{ $json.id }}"
+            },
+            {
+              "column": "videoId",
+              "value": "={{ $json.videoId }}"
+            },
+            {
+              "column": "channelId",
+              "value": "={{ $json.channelId }}"
+            },
+            {
+              "column": "text",
+              "value": "={{ $json.text }}"
+            },
+            {
+              "column": "authorName",
+              "value": "={{ $json.authorName }}"
+            },
+            {
+              "column": "authorChannelId",
+              "value": "={{ $json.authorChannelId }}"
+            },
+            {
+              "column": "likeCount",
+              "value": "={{ $json.likeCount }}"
+            },
+            {
+              "column": "totalReplyCount",
+              "value": "={{ $json.totalReplyCount }}"
+            },
+            {
+              "column": "publishedAt",
+              "value": "={{ $json.publishedAt }}"
+            }
+          ]
+        },
+        "options": {
+          "skipOnConflict": true
+        }
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        1408,
+        -16
+      ],
+      "id": "ea72d490-1421-4b8d-bafd-a03bca0812f0",
+      "name": "Insert rows in a table",
+      "credentials": {
+        "mySql": {
+          "id": "wwGtWWSfKeg2Ev2w",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        208,
+        0
+      ],
+      "id": "026a9b6d-76f9-49f0-864e-855e939c4adb",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        864,
+        -128
+      ],
+      "id": "f5d08c7e-ed39-4722-b83c-deffbe2c3840",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    status: \"fetch_complete\",\n    videoId: $json.videoId\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2064,
+        -16
+      ],
+      "id": "73df8919-757a-469c-8040-c2b09ad1cc83",
+      "name": "final node"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "final node",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "comments table": {
+      "main": [
+        []
+      ]
+    },
+    "Analysis table": {
+      "main": [
+        []
+      ]
+    },
+    "set page token": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "set next page token": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert rows in a table": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "set page token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "set next page token",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Split",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "saveDataErrorExecution": "all",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "2555a4cd-a5ce-4566-8186-473fd232ba17",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "992c800fc61a6acac872fa5bf86f373eb2db533c11c88e0421ee514c5baf036e"
+  },
+  "id": "50Aj0lNdYn1uwFHT",
+  "tags": []
+}
